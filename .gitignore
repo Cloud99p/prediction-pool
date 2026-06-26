@@ -9,8 +9,9 @@ package-lock.json
 .env.*.local
 
 # Keypairs (SECURITY: Never commit private keys!)
-keypairs/*.json
-*.json
+keypairs/
+*.pem
+*.key
 !package.json
 !tsconfig.json
 
