@@ -8,7 +8,7 @@
  */
 
 import axios, { AxiosInstance } from 'axios';
-import { EventSource } from 'eventsource';
+import EventSource from 'eventsource';
 
 export interface TxLINEConfig {
   baseUrl: string;
