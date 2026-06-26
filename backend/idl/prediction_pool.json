@@ -1,0 +1,296 @@
+{
+  "version": "0.1.0",
+  "name": "prediction_pool",
+  "instructions": [
+    {
+      "name": "initializePool",
+      "accounts": [
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "fixtureId",
+          "type": "u64"
+        },
+        {
+          "name": "homeTeam",
+          "type": "string"
+        },
+        {
+          "name": "awayTeam",
+          "type": "string"
+        },
+        {
+          "name": "endTime",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "placeBet",
+      "accounts": [
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "betAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "bettor",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "outcomeType",
+          "type": "u8"
+        },
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "settlePool",
+      "accounts": [
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "authority",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "txlineProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "winningOutcome",
+          "type": "u8"
+        },
+        {
+          "name": "statValidation",
+          "type": {
+            "defined": "StatValidation"
+          }
+        }
+      ]
+    },
+    {
+      "name": "claimWinnings",
+      "accounts": [
+        {
+          "name": "pool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "betAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "bettor",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "PredictionPool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "authority",
+            "type": "publicKey"
+          },
+          {
+            "name": "fixtureId",
+            "type": "u64"
+          },
+          {
+            "name": "homeTeam",
+            "type": "string"
+          },
+          {
+            "name": "awayTeam",
+            "type": "string"
+          },
+          {
+            "name": "endTime",
+            "type": "i64"
+          },
+          {
+            "name": "isSettled",
+            "type": "bool"
+          },
+          {
+            "name": "winningOutcome",
+            "type": {
+              "option": "u8"
+            }
+          },
+          {
+            "name": "totalStaked",
+            "type": "u64"
+          },
+          {
+            "name": "betCount",
+            "type": "u64"
+          }
+        ]
+      }
+    },
+    {
+      "name": "BetAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bettor",
+            "type": "publicKey"
+          },
+          {
+            "name": "pool",
+            "type": "publicKey"
+          },
+          {
+            "name": "outcomeType",
+            "type": "u8"
+          },
+          {
+            "name": "amount",
+            "type": "u64"
+          },
+          {
+            "name": "isClaimed",
+            "type": "bool"
+          },
+          {
+            "name": "payout",
+            "type": {
+              "option": "u64"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "StatValidation",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "fixtureId",
+            "type": "u64"
+          },
+          {
+            "name": "statKey",
+            "type": "u32"
+          },
+          {
+            "name": "statValue",
+            "type": "u32"
+          },
+          {
+            "name": "seq",
+            "type": "u64"
+          },
+          {
+            "name": "proof",
+            "type": {
+              "vec": {
+                "defined": "MerkleProof"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "MerkleProof",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "hash",
+            "type": {
+              "array": ["u8", 32]
+            }
+          },
+          {
+            "name": "isRightSibling",
+            "type": "bool"
+          }
+        ]
+      }
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "InvalidOutcome",
+      "msg": "Invalid outcome type"
+    },
+    {
+      "code": 6001,
+      "name": "PoolNotSettled",
+      "msg": "Pool has not been settled yet"
+    },
+    {
+      "code": 6002,
+      "name": "AlreadyClaimed",
+      "msg": "Winnings already claimed"
+    },
+    {
+      "code": 6003,
+      "name": "InvalidValidation",
+      "msg": "Invalid TxLINE validation proof"
+    }
+  ],
+  "metadata": {
+    "address": "PredPool111111111111111111111111111111111111111"
+  }
+}
