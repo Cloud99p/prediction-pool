@@ -82,13 +82,23 @@ export class KeeperBot {
     
     const poll = async () => {
       try {
-        // Fetch current scores via REST
-        const response = await this.txlineClient.getStatValidation(
-          17952170, // Sample fixture ID
-          1,
-          1
+        // Fetch match data via REST (with auth headers)
+        const response = await fetch(
+          `${this.config.txlineBaseUrl}/api/scores/snapshot/17952170`,
+          {
+            headers: {
+              'Authorization': `Bearer ${this.txlineClient.getJwt()}`,
+              'X-Api-Token': this.txlineClient.getApiToken(),
+            },
+          }
         );
-        console.log('📊 REST poll successful:', response.summary.fixtureId);
+        
+        if (response.ok) {
+          const data = await response.json();
+          console.log('📊 REST poll successful:', data.fixtureId);
+        } else {
+          console.log('⚠️ REST poll failed:', response.status, response.statusText);
+        }
       } catch (error: any) {
         console.log('⚠️ REST poll failed:', error.message);
       }

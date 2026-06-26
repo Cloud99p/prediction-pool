@@ -86,6 +86,20 @@ export class TxLINEClient {
   }
 
   /**
+   * Get current JWT
+   */
+  getJwt(): string {
+    return this.config.jwt || '';
+  }
+
+  /**
+   * Get current API token
+   */
+  getApiToken(): string {
+    return this.config.apiToken || '';
+  }
+
+  /**
    * Get guest JWT token
    */
   async getGuestToken(): Promise<string> {
