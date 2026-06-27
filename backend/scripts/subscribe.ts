@@ -71,7 +71,6 @@ async function subscribe() {
   }
   
   const wallet = new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)));
-  const wallet = new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)));
   
   console.log('🔑 Wallet:', wallet.publicKey.toString());
 
@@ -81,7 +80,6 @@ async function subscribe() {
   anchor.setProvider(provider);
 
   // Load program - try prediction_pool first, then txline
-  let program: anchor.Program;
   const idlPaths = ['./idl/prediction_pool.json', './idl/txline.json'];
   
   for (const idlPath of idlPaths) {
