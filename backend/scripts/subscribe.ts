@@ -16,6 +16,7 @@
 import * as anchor from '@coral-xyz/anchor';
 import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
 import fs from 'fs';
+import path from 'path';
 
 let program: anchor.Program;
 
@@ -36,9 +37,40 @@ async function subscribe() {
   console.log(`Leagues: ${SELECTED_LEAGUES.length > 0 ? SELECTED_LEAGUES.join(', ') : 'Standard bundle'}`);
   console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
 
-  // Load wallet - use existing solana-tx-stack mainnet wallet
-  const walletPath = process.env.ANCHOR_WALLET || '../../.openclaw/workspace/solana-tx-stack/keypairs/mainnet.json';
-  const secretKey = JSON.parse(fs.readFileSync(walletPath, 'utf-8'));
+  // Load wallet - use local Solana wallet or ANCHOR_WALLET env var
+  const walletPath = process.env.ANCHOR_WALLET;
+  
+  let secretKey: number[];
+  if (walletPath) {
+    // Use specified wallet
+    secretKey = JSON.parse(fs.readFileSync(walletPath, 'utf-8'));
+  } else {
+    // Try common Solana CLI wallet locations
+    const defaultPaths = [
+      path.join(require('os').homedir(), '.config', 'solana', 'id.json'),
+      path.join(require('os').homedir(), 'solana-tx-stack', 'keypairs', 'mainnet.json'),
+      './keypairs/mainnet.json',
+    ];
+    
+    for (const p of defaultPaths) {
+      try {
+        secretKey = JSON.parse(fs.readFileSync(p, 'utf-8'));
+        console.log(`🔑 Using wallet: ${p}`);
+        break;
+      } catch {
+        continue;
+      }
+    }
+    
+    if (!secretKey) {
+      console.error('❌ No wallet found. Set ANCHOR_WALLET env var or place keypair in one of:');
+      console.error('   - ~/.config/solana/id.json');
+      console.error('   - ./keypairs/mainnet.json');
+      process.exit(1);
+    }
+  }
+  
+  const wallet = new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)));
   const wallet = new anchor.Wallet(Keypair.fromSecretKey(Uint8Array.from(secretKey)));
   
   console.log('🔑 Wallet:', wallet.publicKey.toString());
