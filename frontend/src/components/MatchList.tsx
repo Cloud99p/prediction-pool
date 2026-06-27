@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useQuery } from 'react-query';
+import { useQuery } from '@tanstack/react-query';
 import apiClient from '@/lib/api';
 import { MatchFixture } from '@/types';
 import MatchCard from './MatchCard';
