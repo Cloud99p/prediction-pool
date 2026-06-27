@@ -1,6 +1,8 @@
 # World Cup Prediction Pool ⚽🏆
 
-**Trustless prediction markets for the 2026 World Cup, powered by TxLINE's cryptographically verifiable data on Solana.**
+**Trustless prediction markets for international football, powered by TxLINE's cryptographically verifiable data on Solana.**
+
+> ⚠️ **Disclaimer:** This project is not affiliated with, endorsed by, or sponsored by FIFA or any tournament organizer. "World Cup" is used for descriptive purposes only. All trademarks and branding are property of their respective owners.
 
 [![Superteam Hackathon](https://img.shields.io/badge/Superteam-Hackathon%202026-purple)](https://superteam.fun)
 [![Track](https://img.shields.io/badge/Track-Prediction%20Markets-blue)](https://superteam.fun/earn/hackathon/world-cup)
@@ -28,6 +30,43 @@ World Cup Prediction Pool enables **trustless, peer-to-peer betting** on World C
 **Track:** Prediction Markets & Settlement (18k USDT prize pool)
 
 **Superteam Earn:** [World Cup Hackathon](https://superteam.fun/earn/hackathon/world-cup)
+
+---
+
+## 🧪 Demo / Judge Testing
+
+**For hackathon judges:** No wallet setup or tokens required!
+
+### Option 1: Live Demo (Recommended)
+
+🔗 **Demo Dashboard:** [Insert your deployed URL here]
+
+**Demo Credentials (hardcoded):**
+- Backend API key: Pre-configured
+- TxLINE API token: Pre-configured
+- Network: Devnet (for testing)
+
+### Option 2: Local Setup
+
+```bash
+# Clone and install
+git clone https://github.com/Cloud99p/world-cup-prediction-pool.git
+cd world-cup-prediction-pool/backend
+npm install
+
+# Use pre-configured demo credentials (no wallet needed)
+cp .env.demo .env
+
+# Start backend
+npm run dev
+
+# Start frontend
+cd ../frontend
+npm install
+npm run dev
+```
+
+**Demo credentials are pre-configured** - you can browse matches and view predictions immediately without setting up wallets or purchasing tokens.
 
 ---
 
