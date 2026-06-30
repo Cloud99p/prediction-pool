@@ -11,6 +11,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Connection, Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { BN } from "bn.js";
 import dotenv from "dotenv";
 import fs from "fs";
 import path from "path";
@@ -84,7 +85,7 @@ async function main() {
     // Subscribe on-chain following TxLINE docs workflow
     // Required accounts: pricing_matrix + token_treasury_v2
     const txSig = await program.methods
-      .subscribe(new anchor.BN(SERVICE_LEVEL_ID), new anchor.BN(DURATION_WEEKS))
+      .subscribe(new BN(SERVICE_LEVEL_ID), new BN(DURATION_WEEKS))
       .accounts({
         user: wallet.publicKey,
         pricingMatrix: PRICING_MATRIX_PDA,
