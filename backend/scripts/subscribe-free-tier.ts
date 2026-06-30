@@ -27,7 +27,10 @@ const SUBSCRIPTION_TOKEN_MINT = new PublicKey("Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNu
 const RPC_URL = "https://api.mainnet-beta.solana.com";
 
 // Free Tier Configuration
-const SERVICE_LEVEL_ID = 12; // Real-time World Cup data
+// Try Service Level 1 first (60s delay) - might be initialized before Level 12
+// Service Level 12 = Real-time (if available)
+const SERVICE_LEVEL_ID = 1; // 60-second delay (more likely to work)
+// const SERVICE_LEVEL_ID = 12; // Real-time (uncomment to try)
 const DURATION_WEEKS = 4; // 4 weeks
 const SELECTED_LEAGUES: number[] = []; // Empty for standard bundle
 
@@ -74,7 +77,7 @@ async function main() {
   const program = new anchor.Program(idl, TXLINE_PROGRAM_ID, provider);
 
   console.log("\n📋 Subscription Details:");
-  console.log(`   Service Level: ${SERVICE_LEVEL_ID} (World Cup Real-Time)`);
+  console.log(`   Service Level: ${SERVICE_LEVEL_ID} (${SERVICE_LEVEL_ID === 1 ? '60s delay' : 'Real-time'})`);
   console.log(`   Duration: ${DURATION_WEEKS} weeks`);
   console.log(`   Leagues: ${SELECTED_LEAGUES.length === 0 ? 'All (standard bundle)' : SELECTED_LEAGUES.join(', ')}`);
   console.log(`   Cost: FREE (no TxL required)`);
