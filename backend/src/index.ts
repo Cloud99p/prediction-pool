@@ -82,14 +82,15 @@ function transformFixture(fixture: any) {
     homeTeam: fixture.Participant1IsHome ? fixture.Participant1 : fixture.Participant2,
     awayTeam: fixture.Participant1IsHome ? fixture.Participant2 : fixture.Participant1,
     startTime: fixture.StartTime, // TxLINE returns Unix timestamp in seconds
-    status: mapTxLINEStatus(fixture.Status),
+    status: mapTxLINEStatus(fixture.Status || 'NS'),
   };
 }
 
 /**
  * Map TxLINE status to frontend status
  */
-function mapTxLINEStatus(status: string): 'scheduled' | 'live' | 'finished' | 'cancelled' {
+function mapTxLINEStatus(status: string | undefined): 'scheduled' | 'live' | 'finished' | 'cancelled' {
+  if (!status) return 'scheduled'; // Default to scheduled if missing
   const s = status.toUpperCase();
   if (s === 'NS') return 'scheduled';
   if (s === 'F' || s === 'FO') return 'finished';
