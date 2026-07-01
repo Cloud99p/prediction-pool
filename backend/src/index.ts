@@ -110,20 +110,23 @@ function transformOdds(txlineOdds: any[]) {
   };
   
   // TxLINE returns odds in different market types
-  // We'll extract the main 1X2 market
+  // Try to find any market with 3 odds (Home/Draw/Away)
   for (const odd of txlineOdds || []) {
     const marketType = odd.MarketType?.toUpperCase() || '';
+    const odds = odd.Odds || odd.odds || [];
     
-    // Look for 1X2, Match Winner, or similar markets
-    if (marketType.includes('1X2') || marketType.includes('MATCH WINNER') || marketType.includes('MONEYLINE')) {
-      const odds = odd.Odds || [];
-      if (odds.length >= 3) {
-        oddsMap.HomeWin = odds[0];
-        oddsMap.Draw = odds[1];
-        oddsMap.AwayWin = odds[2];
-      }
+    // Look for any market with 3 odds (most likely 1X2)
+    if (odds.length >= 3) {
+      console.log(`📊 Found odds for market: ${marketType || 'Unknown'} - ${odds.slice(0, 3).join(', ')}`);
+      oddsMap.HomeWin = parseFloat(odds[0]) || 0;
+      oddsMap.Draw = parseFloat(odds[1]) || 0;
+      oddsMap.AwayWin = parseFloat(odds[2]) || 0;
       break;
     }
+  }
+  
+  if (oddsMap.HomeWin === 0 && oddsMap.Draw === 0 && oddsMap.AwayWin === 0) {
+    console.log(`⚠️ No odds found in ${txlineOdds?.length || 0} markets`);
   }
   
   return oddsMap;
