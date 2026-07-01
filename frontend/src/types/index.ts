@@ -69,6 +69,7 @@ export interface MatchFixture {
   homeScore?: number;
   awayScore?: number;
   period?: string;
+  scores?: any; // TxLINE score data with Score.Participant1.Total.Goals, etc.
 }
 
 export type MatchState = 

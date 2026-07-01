@@ -58,7 +58,11 @@ export default function MatchCard({ match }: MatchCardProps) {
           </span>
           {match.status === 'live' ? (
             <span className="px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-sm font-medium animate-pulse">
-              LIVE
+              🔴 LIVE
+            </span>
+          ) : match.scores?.Score ? (
+            <span className="px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-sm font-medium">
+              ✅ Finished
             </span>
           ) : (
             <span className="text-gray-400 text-sm">
@@ -74,7 +78,7 @@ export default function MatchCard({ match }: MatchCardProps) {
         </div>
       </div>
 
-      {/* Teams & Live Score */}
+      {/* Teams & Score */}
       <div className="flex items-center justify-between mb-6">
         <div className="text-center flex-1">
           <h3 className="text-xl font-bold text-white">{match.homeTeam}</h3>
@@ -82,7 +86,12 @@ export default function MatchCard({ match }: MatchCardProps) {
         </div>
         
         <div className="text-center px-4">
-          {match.status === 'live' || liveScore ? (
+          {/* Show final score for finished matches */}
+          {match.scores?.Score ? (
+            <div className="text-4xl font-bold text-white">
+              {match.scores.Score.Participant1?.Total?.Goals ?? 0} - {match.scores.Score.Participant2?.Total?.Goals ?? 0}
+            </div>
+          ) : match.status === 'live' || liveScore ? (
             <div className="text-4xl font-bold text-primary">
               {liveScore?.homeScore ?? 0} - {liveScore?.awayScore ?? 0}
             </div>
@@ -91,6 +100,9 @@ export default function MatchCard({ match }: MatchCardProps) {
           )}
           {isLive && (
             <div className="text-xs text-green-400 mt-1 animate-pulse">● LIVE</div>
+          )}
+          {match.scores?.Score && (
+            <div className="text-xs text-blue-400 mt-1">● FT</div>
           )}
         </div>
         
