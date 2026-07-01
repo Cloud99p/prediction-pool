@@ -100,7 +100,37 @@ function mapTxLINEStatus(status: string | undefined): 'scheduled' | 'live' | 'fi
 }
 
 /**
- * Get live/upcoming matches from TxLINE
+ * Transform TxLINE odds to frontend format
+ */
+function transformOdds(txlineOdds: any[]) {
+  const oddsMap: Record<string, number> = {
+    HomeWin: 0,
+    Draw: 0,
+    AwayWin: 0,
+  };
+  
+  // TxLINE returns odds in different market types
+  // We'll extract the main 1X2 market
+  for (const odd of txlineOdds || []) {
+    const marketType = odd.MarketType?.toUpperCase() || '';
+    
+    // Look for 1X2, Match Winner, or similar markets
+    if (marketType.includes('1X2') || marketType.includes('MATCH WINNER') || marketType.includes('MONEYLINE')) {
+      const odds = odd.Odds || [];
+      if (odds.length >= 3) {
+        oddsMap.HomeWin = odds[0];
+        oddsMap.Draw = odds[1];
+        oddsMap.AwayWin = odds[2];
+      }
+      break;
+    }
+  }
+  
+  return oddsMap;
+}
+
+/**
+ * Get live/upcoming matches from TxLINE with odds
  * Query params: competitionId (optional) - filter by specific competition
  */
 app.get('/api/matches', async (req, res) => {
@@ -116,6 +146,7 @@ app.get('/api/matches', async (req, res) => {
             awayTeam: 'Germany',
             startTime: Date.now() + 3600000,
             status: 'scheduled' as const,
+            odds: { HomeWin: 2.0, Draw: 3.0, AwayWin: 2.5 },
           },
         ],
         source: 'demo',
@@ -126,8 +157,22 @@ app.get('/api/matches', async (req, res) => {
     const competitionId = req.query.competitionId ? parseInt(req.query.competitionId as string) : undefined;
     const fixtures = await txlineClient.getFixtures(competitionId);
     
-    // Transform TxLINE format to frontend format
-    const transformed = fixtures.map(transformFixture);
+    // Transform and enrich with odds
+    const transformed = await Promise.all(
+      fixtures.map(async (fixture) => {
+        const base = transformFixture(fixture);
+        
+        // Fetch odds for this fixture
+        try {
+          const txlineOdds = await txlineClient.getOddsSnapshot(fixture.FixtureId);
+          const odds = transformOdds(txlineOdds);
+          return { ...base, odds };
+        } catch (error) {
+          // No odds available, use defaults
+          return { ...base, odds: { HomeWin: 0, Draw: 0, AwayWin: 0 } };
+        }
+      })
+    );
     
     res.json({ matches: transformed, source: 'txline' });
   } catch (error: any) {
@@ -169,7 +214,47 @@ app.get('/api/matches/:fixtureId', async (req, res) => {
 });
 
 /**
- * Get odds snapshot for a fixture
+ * Get live odds for all matches
+ */
+app.get('/api/odds', async (req, res) => {
+  try {
+    if (!process.env.TXLINE_API_TOKEN) {
+      return res.status(400).json({ error: 'TxLINE not configured' });
+    }
+
+    // Get all fixtures first
+    const fixtures = await txlineClient.getFixtures();
+    
+    // Fetch odds for each fixture
+    const oddsPromises = fixtures.map(async (fixture: any) => {
+      try {
+        const odds = await txlineClient.getOddsSnapshot(fixture.FixtureId);
+        return {
+          fixtureId: fixture.FixtureId,
+          odds: odds || [],
+        };
+      } catch (error: any) {
+        // Some fixtures might not have odds yet
+        return {
+          fixtureId: fixture.FixtureId,
+          odds: [],
+        };
+      }
+    });
+    
+    const allOdds = await Promise.all(oddsPromises);
+    res.json({ odds: allOdds, source: 'txline' });
+  } catch (error: any) {
+    console.error('Failed to fetch odds:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to fetch odds',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * Get odds snapshot for a specific fixture
  */
 app.get('/api/odds/:fixtureId', async (req, res) => {
   try {
