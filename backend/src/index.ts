@@ -180,9 +180,8 @@ app.get('/api/matches/upcoming', async (req, res) => {
     let upcomingMatches = fixtures.filter((fixture: any) => {
       const startTime = fixture.StartTime || 0;
       const status = mapTxLINEStatus(fixture.Status, fixture.StartTime);
-      // Upcoming: future OR (within 2 hours of start AND not finished)
-      const matchEnd = startTime + (2 * 60 * 60 * 1000);
-      return startTime > now || (startTime < now && matchEnd > now && status !== 'finished');
+      // Upcoming: ONLY future matches (not live, not finished)
+      return startTime > now && status === 'scheduled';
     });
     
     // If date filter provided, filter by that date
