@@ -181,7 +181,9 @@ app.get('/api/matches/upcoming', async (req, res) => {
     let upcomingMatches = fixtures.filter((fixture: any) => {
       const startTime = fixture.StartTime || 0;
       const status = mapTxLINEStatus(fixture.Status, fixture.StartTime);
-      return startTime > now && status !== 'live'; // Match starts in the future AND not live
+      // Upcoming: future OR (within 2 hours of start AND not finished)
+      const matchEnd = startTime + (2 * 60 * 60 * 1000);
+      return startTime > now || (startTime < now && matchEnd > now && status !== 'finished');
     });
     
     // If date filter provided, filter by that date
@@ -235,13 +237,38 @@ app.get('/api/matches/live', async (req, res) => {
     const fixtures = await txlineClient.getFixtures();
     const now = Date.now();
     
-    // Filter for live matches: started but not finished
+    // Filter for live matches: started in last 2 hours and not finished
     const liveMatches = fixtures.filter((fixture: any) => {
       const status = mapTxLINEStatus(fixture.Status, fixture.StartTime);
       const startTime = fixture.StartTime || 0;
-      // Live if: started in past AND (status is live OR has scores)
-      return startTime < now && (status === 'live' || fixture.scores?.Score);
+      
+      // Live if: started in past AND within 2 hours AND not finished
+      const matchEnd = startTime + (2 * 60 * 60 * 1000); // 2 hours after start
+      return startTime < now && matchEnd > now && status !== 'finished';
     });
+    
+    console.log(`🔴 Live matches: ${liveMatches.length}`);
+    
+    // Transform and fetch odds for live matches
+    const matches = await Promise.all(
+      liveMatches.map(async (fixture: any) => {
+        const odds = await txlineClient.getOddsSnapshot(fixture.FixtureId);
+        return {
+          ...transformFixture(fixture),
+          odds: transformOdds(odds),
+        };
+      })
+    );
+    
+    res.json({ matches, count: matches.length, source: 'txline' });
+  } catch (error: any) {
+    console.error('Failed to fetch live matches:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to fetch live matches',
+      message: error.message,
+    });
+  }
+});
     
     // Transform and fetch odds for live matches
     const matches = await Promise.all(
@@ -278,12 +305,13 @@ app.get('/api/matches/previous', async (req, res) => {
     const now = Date.now();
     const { date } = req.query;
     
-    // Filter for matches that have finished (not live anymore)
+    // Filter for matches that have finished
     let previousMatches = fixtures.filter((fixture: any) => {
       const startTime = fixture.StartTime || 0;
       const status = mapTxLINEStatus(fixture.Status, fixture.StartTime);
-      // Previous if: started in past AND (finished OR has final scores)
-      return startTime < now && (status === 'finished' || (fixture.scores?.Score && status !== 'live'));
+      const matchEnd = startTime + (2 * 60 * 60 * 1000);
+      // Previous: finished OR (more than 2 hours after start)
+      return (status === 'finished') || (startTime < now && matchEnd < now);
     });
     
     // If date filter provided, filter by that date
