@@ -17,7 +17,11 @@ import {
   TransactionInstruction,
   AccountMeta,
 } from "@solana/web3.js";
-import { TOKEN_2022_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { 
+  TOKEN_2022_PROGRAM_ID, 
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
 import { BN } from "bn.js";
 import fs from "fs";
 import path from "path";
@@ -30,11 +34,21 @@ const TXLINE_PROGRAM_ID = new PublicKey("9ExbZjAapQww1vfcisDmrngPinHTEfpjYRWMunJ
 const TXL_TOKEN_MINT = new PublicKey("Zhw9TVKp68a1QrftncMSd6ELXKDtpVMNuMGr1jNwdeL");
 const RPC_URL = "https://api.mainnet-beta.solana.com";
 
-// Verified accounts (from debug scripts)
+// Use token_treasury_v2 (the one the program expects - will be created by subscribe)
 const PRICING_MATRIX = new PublicKey("HPjtXsXRYAdBppSMzsqGGDTuhUQT7aXtsbn52CjhqRM7");
 const USER_TOKEN_ACCOUNT = new PublicKey("BvnhGgkoszpj1pFpp6VBrZ7enA7F6tspUJGEPhcw95yU");
-const TREASURY_PDA = new PublicKey("2oerdMyJXg2CHZ9n2NDVhf3JjJNE8QVDsa7PFpABsAmD");
-const TREASURY_VAULT = new PublicKey("AJ9zqsxGh92GLU1R7pL4y85znxzS7bGH7Y1iwKA9vfYp");
+const [TREASURY_PDA] = PublicKey.findProgramAddressSync(
+  [Buffer.from("token_treasury_v2")],
+  TXLINE_PROGRAM_ID
+);
+// Vault for v2 treasury
+const TREASURY_VAULT = getAssociatedTokenAddressSync(
+  TXL_TOKEN_MINT,
+  TREASURY_PDA,
+  true,
+  TOKEN_2022_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID
+);
 
 const SERVICE_LEVEL_ID = 1; // 60-second delay
 const DURATION_WEEKS = 4;
@@ -68,6 +82,10 @@ async function main() {
   
   const discriminator = Buffer.from(subscribeIx.discriminator);
   console.log(`📋 Discriminator: ${discriminator.toString("hex")}`);
+
+  console.log(`\n🏛️  Treasury Accounts (v2 - will be created):`);
+  console.log(`   token_treasury_v2: ${TREASURY_PDA.toBase58()}`);
+  console.log(`   token_treasury_vault: ${TREASURY_VAULT.toBase58()}`);
 
   // Encode arguments (service_level_id: u16, weeks: u8)
   const args = Buffer.alloc(3);
