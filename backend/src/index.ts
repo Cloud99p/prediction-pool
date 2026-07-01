@@ -82,20 +82,34 @@ function transformFixture(fixture: any) {
     homeTeam: fixture.Participant1IsHome ? fixture.Participant1 : fixture.Participant2,
     awayTeam: fixture.Participant1IsHome ? fixture.Participant2 : fixture.Participant1,
     startTime: fixture.StartTime, // TxLINE returns Unix timestamp in seconds
-    status: mapTxLINEStatus(fixture.Status || 'NS'),
+    status: mapTxLINEStatus(fixture.Status, fixture.StartTime),
   };
 }
 
 /**
  * Map TxLINE status to frontend status
  */
-function mapTxLINEStatus(status: string | undefined): 'scheduled' | 'live' | 'finished' | 'cancelled' {
-  if (!status) return 'scheduled'; // Default to scheduled if missing
+function mapTxLINEStatus(status: string | undefined, startTime?: number): 'scheduled' | 'live' | 'finished' | 'cancelled' {
+  if (!status) {
+    // If no status, check if match should be live based on start time
+    if (startTime) {
+      const now = Date.now();
+      const startMs = startTime * 1000; // Convert to milliseconds
+      const matchStart = new Date(startMs).getTime();
+      const matchEnd = matchStart + (2 * 60 * 60 * 1000); // 2 hours after start
+      
+      if (now >= matchStart && now <= matchEnd) {
+        return 'live';
+      }
+    }
+    return 'scheduled';
+  }
+  
   const s = status.toUpperCase();
   if (s === 'NS') return 'scheduled';
   if (s === 'F' || s === 'FO') return 'finished';
   if (s === 'C' || s === 'A' || s === 'TXCC') return 'cancelled';
-  // Everything else is live (Q1, Q2, HT, Q3, Q4, OT, etc.)
+  // Everything else is live (Q1, Q2, HT, Q3, Q4, OT, H1, H2, etc.)
   return 'live';
 }
 
@@ -230,7 +244,121 @@ app.get('/api/matches/:fixtureId', async (req, res) => {
 });
 
 /**
- * Get live odds for all matches
+ * Get live matches only (Bet9ja-style)
+ */
+app.get('/api/matches/live', async (req, res) => {
+  try {
+    if (!process.env.TXLINE_API_TOKEN) {
+      return res.status(400).json({ error: 'TxLINE not configured' });
+    }
+
+    const fixtures = await txlineClient.getFixtures();
+    
+    // Filter to only live matches
+    const liveFixtures = fixtures.filter((f: any) => {
+      const status = mapTxLINEStatus(f.Status, f.StartTime);
+      return status === 'live';
+    });
+    
+    // Transform and enrich with odds
+    const transformed = await Promise.all(
+      liveFixtures.map(async (fixture) => {
+        const base = transformFixture(fixture);
+        try {
+          const txlineOdds = await txlineClient.getOddsSnapshot(fixture.FixtureId);
+          const odds = transformOdds(txlineOdds);
+          return { ...base, odds };
+        } catch (error) {
+          return { ...base, odds: { HomeWin: 0, Draw: 0, AwayWin: 0, Over2_5: 0, Under2_5: 0 } };
+        }
+      })
+    );
+    
+    res.json({ matches: transformed, source: 'txline', count: transformed.length });
+  } catch (error: any) {
+    console.error('Failed to fetch live matches:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to fetch live matches',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * Get matches by league (Bet9ja-style league filter)
+ */
+app.get('/api/matches/league/:leagueId', async (req, res) => {
+  try {
+    if (!process.env.TXLINE_API_TOKEN) {
+      return res.status(400).json({ error: 'TxLINE not configured' });
+    }
+
+    const leagueId = parseInt(req.params.leagueId);
+    const fixtures = await txlineClient.getFixtures(leagueId);
+    
+    const transformed = await Promise.all(
+      fixtures.map(async (fixture) => {
+        const base = transformFixture(fixture);
+        try {
+          const txlineOdds = await txlineClient.getOddsSnapshot(fixture.FixtureId);
+          const odds = transformOdds(txlineOdds);
+          return { ...base, odds };
+        } catch (error) {
+          return { ...base, odds: { HomeWin: 0, Draw: 0, AwayWin: 0, Over2_5: 0, Under2_5: 0 } };
+        }
+      })
+    );
+    
+    res.json({ matches: transformed, leagueId, source: 'txline' });
+  } catch (error: any) {
+    console.error('Failed to fetch league matches:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to fetch league matches',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * Get all available leagues with match counts (Bet9ja-style)
+ */
+app.get('/api/leagues', async (req, res) => {
+  try {
+    if (!process.env.TXLINE_API_TOKEN) {
+      return res.status(400).json({ error: 'TxLINE not configured' });
+    }
+
+    const fixtures = await txlineClient.getFixtures();
+    
+    // Group by league
+    const leagueMap = new Map<number, { id: number; name: string; count: number }>();
+    
+    for (const fixture of fixtures) {
+      const leagueId = fixture.CompetitionId;
+      const leagueName = fixture.Competition || 'Unknown';
+      
+      if (!leagueMap.has(leagueId)) {
+        leagueMap.set(leagueId, { id: leagueId, name: leagueName, count: 0 });
+      }
+      
+      const league = leagueMap.get(leagueId)!;
+      league.count++;
+    }
+    
+    const leagues = Array.from(leagueMap.values()).sort((a, b) => b.count - a.count);
+    
+    res.json({ leagues, source: 'txline' });
+  } catch (error: any) {
+    console.error('Failed to fetch leagues:', error.message);
+    res.status(500).json({ 
+      error: 'Failed to fetch leagues',
+      message: error.message,
+    });
+  }
+});
+
+/**
+ * Get all odds for all matches
  */
 app.get('/api/odds', async (req, res) => {
   try {
