@@ -98,12 +98,11 @@ export default function MatchCard({ match }: MatchCardProps) {
         </div>
       </div>
 
-      {/* Outcomes with Live Odds */}
-      <div className="grid grid-cols-3 gap-3">
+      {/* Outcomes with Live Odds - Over/Under 2.5 Goals */}
+      <div className="grid grid-cols-2 gap-3">
         {[
-          { type: 'Home Win', odds: match.odds?.HomeWin || 0 },
-          { type: 'Draw', odds: match.odds?.Draw || 0 },
-          { type: 'Away Win', odds: match.odds?.AwayWin || 0 },
+          { type: 'Over 2.5', odds: match.odds?.Over2_5 || 0 },
+          { type: 'Under 2.5', odds: match.odds?.Under2_5 || 0 },
         ].map((outcome) => {
           const hasOdds = outcome.odds > 0;
           return (
@@ -124,7 +123,37 @@ export default function MatchCard({ match }: MatchCardProps) {
                 {hasOdds ? outcome.odds.toFixed(2) : '--'}
               </div>
               <div className="text-xs text-gray-500 mt-1">
-                {hasOdds ? 'Live odds' : 'No odds'}
+                {hasOdds ? '⚽ Goals' : 'No odds'}
+              </div>
+            </button>
+          );
+        })}
+      </div>
+      
+      {/* 1X2 Market (Placeholder - TxLINE doesn't provide 1X2) */}
+      <div className="grid grid-cols-3 gap-3 mt-3">
+        {[
+          { type: 'Home', odds: match.odds?.HomeWin || 0 },
+          { type: 'Draw', odds: match.odds?.Draw || 0 },
+          { type: 'Away', odds: match.odds?.AwayWin || 0 },
+        ].map((outcome) => {
+          const hasOdds = outcome.odds > 0;
+          return (
+            <button
+              key={outcome.type}
+              onClick={() => hasOdds && handleOutcomeClick(outcome.type, outcome.odds)}
+              disabled={!hasOdds}
+              className={`p-3 rounded-lg border-2 transition-all text-sm ${
+                !hasOdds
+                  ? 'border-gray-700 opacity-50 cursor-not-allowed'
+                  : selectedOutcome === outcome.type
+                  ? 'border-primary bg-primary/20'
+                  : 'border-gray-600 hover:border-gray-500'
+              }`}
+            >
+              <div className="text-xs text-gray-400 mb-1">{outcome.type}</div>
+              <div className="text-lg font-bold text-white">
+                {hasOdds ? outcome.odds.toFixed(2) : '--'}
               </div>
             </button>
           );

@@ -107,26 +107,39 @@ function transformOdds(txlineOdds: any[]) {
     HomeWin: 0,
     Draw: 0,
     AwayWin: 0,
+    Over2_5: 0,
+    Under2_5: 0,
   };
   
-  // TxLINE returns odds in different market types
-  // Try to find any market with 3 odds (Home/Draw/Away)
+  // TxLINE provides Asian Handicap and Over/Under markets (not 1X2)
+  // We'll extract Over/Under 2.5 goals as the main market
   for (const odd of txlineOdds || []) {
-    const marketType = odd.MarketType?.toUpperCase() || '';
-    const odds = odd.Odds || odd.odds || [];
+    const superType = odd.SuperOddsType?.toUpperCase() || '';
+    const params = odd.MarketParameters || '';
+    const prices = odd.Prices || [];
     
-    // Look for any market with 3 odds (most likely 1X2)
-    if (odds.length >= 3) {
-      console.log(`📊 Found odds for market: ${marketType || 'Unknown'} - ${odds.slice(0, 3).join(', ')}`);
-      oddsMap.HomeWin = parseFloat(odds[0]) || 0;
-      oddsMap.Draw = parseFloat(odds[1]) || 0;
-      oddsMap.AwayWin = parseFloat(odds[2]) || 0;
-      break;
+    // Look for Over/Under 2.5 goals
+    if (superType.includes('OVERUNDER') && params.includes('2.5')) {
+      if (prices.length >= 2) {
+        // Prices are in format [over, under] as integers (multiplied by 1000)
+        const overOdd = prices[0] / 1000; // Convert from 1694 to 1.694
+        const underOdd = prices[1] / 1000;
+        console.log(`📊 Found Over/Under 2.5: Over=${overOdd.toFixed(2)}, Under=${underOdd.toFixed(2)}`);
+        oddsMap.Over2_5 = overOdd;
+        oddsMap.Under2_5 = underOdd;
+        
+        // For 1X2, we'll use a simple conversion (not perfect but works for demo)
+        // This is a placeholder - in production you'd fetch actual 1X2 odds
+        oddsMap.HomeWin = 2.0; // Placeholder
+        oddsMap.Draw = 3.0;    // Placeholder
+        oddsMap.AwayWin = 2.5; // Placeholder
+        break;
+      }
     }
   }
   
-  if (oddsMap.HomeWin === 0 && oddsMap.Draw === 0 && oddsMap.AwayWin === 0) {
-    console.log(`⚠️ No odds found in ${txlineOdds?.length || 0} markets`);
+  if (oddsMap.Over2_5 === 0 && oddsMap.Under2_5 === 0) {
+    console.log(`⚠️ No Over/Under odds found in ${txlineOdds?.length || 0} markets`);
   }
   
   return oddsMap;

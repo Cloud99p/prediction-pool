@@ -63,6 +63,8 @@ export interface MatchFixture {
     HomeWin: number;
     Draw: number;
     AwayWin: number;
+    Over2_5: number;
+    Under2_5: number;
   };
   homeScore?: number;
   awayScore?: number;
