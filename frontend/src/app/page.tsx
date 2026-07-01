@@ -33,6 +33,13 @@ export default function Home() {
   const fetchMatches = async () => {
     setLoading(true);
     try {
+      // Fetch live count separately (always)
+      if (activeTab !== 'live') {
+        const liveRes = await fetch('/api/matches/live');
+        const liveData = await liveRes.json();
+        setLiveCount(liveData.count || 0);
+      }
+      
       let url = '';
       
       if (activeTab === 'live') {
@@ -48,7 +55,6 @@ export default function Home() {
       const response = await fetch(url);
       const data = await response.json();
       setMatches(data.matches || []);
-      setLiveCount(data.count || 0);
       setLoading(false);
     } catch (error) {
       console.error('Error fetching matches:', error);
